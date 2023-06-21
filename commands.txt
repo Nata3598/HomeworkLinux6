@@ -1,0 +1,93 @@
+sudo apt update 
+
+sudo apt install -y nginx
+
+sudo apt search fpm
+
+sudo apt install -y php-fpm
+sudo systemctl start php8.1-fpm
+
+sudo nano /etc/php/8.1/fpm/pool.d/www.conf
+listen = /run/php/php8.1-fpm.sock
+
+# PHP-FPM
+sudo nano /etc/nginx/sites-enabled/default
+server {
+  ...
+  location ~ \.php$ {
+    include snippets/fastcgi-php.conf;
+    fastcgi_pass unix:/run/php/php8.1-fpm.sock;
+  }
+  ...
+}
+
+nginx -t
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+
+systemctl restart nginx
+
+sudo apt install -y apache2
+
+sudo a2enmod proxy_fcgi setenvif
+sudo a2enconf php8.1-fpm
+
+# Set port 8080
+sudo nano /etc/apache2/ports.conf
+...
+Listen 8080
+...
+
+sudo nano /etc/apache2/sites-enabled/000-default.conf
+<VirtualHost *:8080>
+...
+
+sudo systemctl restart apache2
+
+systemctl status apache2
+Active: active (running)
+
+# Reverse proxy to apache
+sudo nano /etc/nginx/sites-enabled/default
+...
+location / {
+  proxy_pass      http://127.0.0.1:8080/;
+  proxy_redirect    off;
+  proxy_set_header  Host $host;
+  proxy_set_header  X-Real-IP $remote_addr;
+  proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
+  client_max_body_size 10m;
+  proxy_connect_timeout 90;
+}
+...
+
+sudo nginx -t 
+
+systemctl status nginx 
+Active: active (running) 
+
+
+sudo apt install -y mysql-server
+sudo systemctl status mysql
+Active: active (running)
+
+sudo mysql
+CREATE DATABASE mydatabase;
+SHOW DATABASES;
+USE mydatabase;
+CREATE TABLE hedgehogs (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(10));
+INSERT INTO hedgehogs (name) VALUES ('Bob'),('Marina'),('Mike');
+
+SELECT * FROM hedgehogs;
++----+--------+
+| id | name   |
++----+--------+
+|  1 | Bob    |
+|  2 | Marina |
+|  3 | Mike   |
++----+--------+
+
+
+sudo apt install -y php-mbstring
+
+sudo apt install -y phpmyadmin
